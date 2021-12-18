@@ -174,6 +174,7 @@ namespace SPY
                                     txtClass.Text = classBuffer.ToString();
                                 }
                                 InitTreeviewNode(GetChildWindows(handle));
+                                IsCaptionChanged = false;
                             }
 
                         }));
@@ -186,7 +187,6 @@ namespace SPY
                             tvChildHwnd.Nodes.Clear();
                         }));
                     }
-                    IsCaptionChanged = false;
                     captionBuffer.Clear();
                     classBuffer.Clear();
                 }
