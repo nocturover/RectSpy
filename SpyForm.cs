@@ -18,6 +18,7 @@ namespace SPY
         private int HotkeyId = 0;
         private bool ForgroundFlag;
         private bool IsCaptionChanged;
+        Dictionary<string, string> itemDict;
 
         // event_changed radio checked state => ForgroundFlag = false and task done!
         public SpyForm()
@@ -30,7 +31,7 @@ namespace SPY
             StartMonitoringSystem();
         }
 
-        
+
 
         private void StartMonitoringSystem()
         {
@@ -44,7 +45,7 @@ namespace SPY
 
         private void InitializeCommandsLV()
         {
-            
+
             lvCommands.Clear();
             lvCommands.View = View.Details;
             lvCommands.FullRowSelect = true;
@@ -53,9 +54,11 @@ namespace SPY
             lvCommands.Columns.Add("Method");
             lvCommands.Columns.Add("Desc");
 
-            Dictionary<string, string> itemDict = new();
+            itemDict = new();
             itemDict.Add("SetForegroundWindow", "Set Focus");
             itemDict.Add("WM_CLOSE", "Close Window");
+            itemDict.Add("SC_MINIMIZE", "Minimize Window");
+            itemDict.Add("SW_HIDE", "Hide Window Forced");
             foreach (KeyValuePair<string, string> pair in itemDict)
             {
                 ListViewItem item = new ListViewItem(pair.Key);
@@ -106,9 +109,9 @@ namespace SPY
             }
             bool IsSaveListDuplicated(string checkItem)
             {
-                foreach(ListViewItem item in lvSaveList.Items)
+                foreach (ListViewItem item in lvSaveList.Items)
                 {
-                   if( item.SubItems[1].Text == checkItem)
+                    if (item.SubItems[1].Text == checkItem)
                         return true;
                     else
                         return false;
@@ -120,7 +123,6 @@ namespace SPY
         private void InitializeHotKey()
         {
             // save list
-            RegisterHotKey(this.Handle, HotkeyId, (int)KeyModifier.Shift, Keys.A.GetHashCode());
             RegisterHotKey(this.Handle, HotkeyId, (int)KeyModifier.Shift, Keys.A.GetHashCode());
         }
 
@@ -162,19 +164,19 @@ namespace SPY
                     if (handle != IntPtr.Zero)
                     {
                         lblRamp.BackColor = Color.LightGreen;
-                        if (IsCaptionChanged)
+                        this.BeginInvoke(new Action(() =>
                         {
-
-                            this.BeginInvoke(new Action(() =>
+                            txtHwndId.Text = handle.ToInt32().ToString();
+                            if (IsCaptionChanged)
                             {
-                                txtHwndId.Text = handle.ToInt32().ToString();
                                 if (GetClassName(handle, classBuffer, nChars) > 0)
                                 {
                                     txtClass.Text = classBuffer.ToString();
                                 }
                                 InitTreeviewNode(GetChildWindows(handle));
-                            }));
-                        }
+                            }
+
+                        }));
                     }
                     else
                     {
@@ -190,7 +192,7 @@ namespace SPY
                 }
 
                 Thread.Sleep(500);
-                
+
             }
         }
         private void InitTreeviewNode(List<IntPtr> childHandles)
@@ -207,7 +209,7 @@ namespace SPY
 
             void AddNodesRecursive(List<IntPtr> handles, TreeNodeCollection nodes)
             {
-               
+
                 StringBuilder nodeSb = new();
                 StringBuilder captionBuffer = new(maxCount);
                 StringBuilder classBuffer = new(maxCount);
@@ -216,7 +218,7 @@ namespace SPY
                     if (DuplicatedCheckList.Contains(child))
                     {
                         continue;
-                    }    
+                    }
                     DuplicatedCheckList.Add(child);
 
                     nodeSb.Append(child.ToString());
@@ -327,20 +329,29 @@ namespace SPY
         private void lvCommands_DoubleClick(object sender, EventArgs e)
         {
             IntPtr hwnd = SelectActiveHandle();
-           
+
             if (lvCommands.SelectedItems.Count > 0)
             {
                 string command = lvCommands.SelectedItems[0].SubItems[0].Text;
-                if (command == "SetForegroundWindow")
+                string[] dictKeys = itemDict.Keys.ToArray();
+                switch (Array.IndexOf(dictKeys, command))
                 {
-                    SetForegroundWindow(hwnd);
-                }
-                if (command == "WM_CLOSE")
-                {
-                    PostMessage(hwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                    case 0:// "SetForegroundWindow"
+                        SetForegroundWindow(hwnd);
+                        break;
+                    case 1: // "WM_CLOSE"
+                        PostMessage(hwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                        break;
+                    case 2: // "SC_MINIMIZE"
+                        PostMessage(hwnd, WM_SYSCOMMAND, new IntPtr(SC_MINIMIZE), IntPtr.Zero);
+                        break;
+                    case 3: // "SW_HIDE"
+                        ShowWindow(hwnd, SW_HIDE);
+                        break;
                 }
                 command = null;
-            }    
+                dictKeys = null;
+            }
             IntPtr SelectActiveHandle()
             {
                 if (tvChildHwnd.SelectedNode != null)
@@ -357,6 +368,21 @@ namespace SPY
 
         private void btnSend_Click(object sender, EventArgs e)
         {
+            //Task.Run(new Action(async () =>
+            //{
+            //    while (true)
+            //    {
+            //        this.BeginInvoke(new Action(() =>
+            //        {
+            //            SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, TOPMOST_FLAGS);
+            //        }));
+            //        await Task.Delay(100);
+            //    }
+            //}));
+            Rect rect = new Rect();
+            GetWindowRect(new IntPtr(Int32.Parse(txtHwndId.Text)), ref rect);
+            txtCommander.AppendText(string.Format($"{rect.Top}/{rect.Left}/{rect.Bottom}/{rect.Right}" + Environment.NewLine));
+            txtCommander.AppendText(string.Format($"{rect.Bottom - rect.Top}/{rect.Right - rect.Left}" + Environment.NewLine));
         }
     }
 }

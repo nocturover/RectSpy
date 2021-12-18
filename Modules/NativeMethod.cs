@@ -8,6 +8,8 @@ using System.Windows.Forms;
 
 namespace SPY.Modules
 {
+   
+    // ver 1.1;2021.12.18
     class NativeMethod
     {
         //http://www.pinvoke.net/default.aspx/user32.BeginPaint
@@ -33,15 +35,32 @@ namespace SPY.Modules
         }
         #endregion
 
-
+        #region SendPostMessage constants
         public const int WM_LBUTTONDOWN = 0x0201;
         public const int WM_LBUTTONUP = 0x0202;
         public const int BM_CLICK = 0x00F5;
 
         public const int WM_CLOSE = 0x0010;
         public const int WM_QUIT = 0x12;
+        public const uint WM_SETTEXT = 0x000C;
 
+        public const int WM_SYSCOMMAND = 0x0112;
+        public const int SC_MINIMIZE = 0xF020;
+
+        public const int SW_FORCEMINIMIZE= 0x1011;
+        public const int SW_HIDE = 0x00;
+
+
+        public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        public const UInt32 SWP_NOSIZE = 0x0001;
+        public const UInt32 SWP_NOMOVE = 0x0002;
+        public const UInt32 TOPMOST_FLAGS = SWP_NOMOVE | SWP_NOSIZE;
+        #endregion
+
+
+        #region callback Delegate methods
         public delegate bool EnumWindowProc(IntPtr hWnd, IntPtr parameter);
+        #endregion
 
 
         #region Find Handle
@@ -52,6 +71,9 @@ namespace SPY.Modules
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool EnumChildWindows(IntPtr window, EnumWindowProc callback, IntPtr lParam);
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
         #endregion
 
 
@@ -76,6 +98,11 @@ namespace SPY.Modules
         public static extern int SendMessage(IntPtr hwnd, int wMsg, IntPtr wParam, IntPtr IParam);
         [DllImport("user32.dll")]
         public static extern int PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32")]
+        public static extern int ShowWindow(IntPtr hwnd, int nCmdShow);
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
         #endregion
 
         #region hotkey
